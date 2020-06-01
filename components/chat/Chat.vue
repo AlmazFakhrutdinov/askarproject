@@ -8,41 +8,12 @@
         placeholder="Поиск"
       />
       <div class="menu__users-container">
-        <div
-          v-for="(item, index) in chatItems"
-          :key="index"
-          :class="{ active: activeChatIndex === index }"
-          class="menu__list"
-          @click="activeChatIndex = index"
-        >
-          <div
-            v-show="menuListIndexes.includes(index)"
-            class="menu__hiding-wrapper"
-          >
-            <div class="menu__item">
-              <img class="menu__img" :src="item.avatar" alt="avatar" />
-              <span
-                :style="{
-                  backgroundColor: item.online ? '#5ECBA1' : '#C9D2E1'
-                }"
-                class="menu__online-status"
-              ></span>
-              <div class="menu__user-full-name">
-                <p>{{ item.firstName }}</p>
-                <p>{{ item.lastName }}</p>
-              </div>
-              <span
-                v-if="item.unreadMessages"
-                class="menu__unread-message-number"
-              >
-                {{ item.unreadMessages }}
-              </span>
-            </div>
-            <p class="menu__last-message">
-              {{ item.chatList[item.chatList.length - 1].message }}
-            </p>
-          </div>
-        </div>
+        <menu-list
+          :active-chat-index="activeChatIndex"
+          :menu-list-indexes="menuListIndexes"
+          :chat-items="chatItems"
+          @setActiveChatIndex="setActiveChatIndex"
+        />
       </div>
     </div>
     <div class="chat">
@@ -51,7 +22,7 @@
       </p>
       <div class="chat__title">
         <img
-          src="../../assets/icons/book.svg"
+          src="@/assets/icons/book.svg"
           class="chat__title-icon"
           alt="book"
         />
@@ -60,157 +31,37 @@
         </p>
       </div>
       <div id="chat-container" class="chat__container">
-        <div
-          v-for="(item, index) in currentChat"
-          id="chat-item"
-          :key="index"
-          class="chat__item"
-          :style="{
-            flexDirection: item.userId === currentUserId ? 'row-reverse' : 'row'
-          }"
-        >
-          <img
-            v-if="isHiddenImg(index)"
-            :style="{
-              margin:
-                item.userId === currentUserId
-                  ? '0px 0px 0px 20px'
-                  : '0px 20px 0px 0px'
-            }"
-            class="chat__img"
-            :src="item.avatar"
-            alt="message"
-          />
-          <span
-            v-else
-            :style="{
-              margin:
-                item.userId === currentUserId
-                  ? '0px 0px 0px 20px'
-                  : '0px 20px 0px 0px'
-            }"
-            class="chat__img"
-          >
-          </span>
-          <p
-            :style="{
-              backgroundColor:
-                item.userId === currentUserId ? '#DFEDFF' : '#F9FAFF'
-            }"
-            class="chat__message"
-          >
-            {{ item.message }}
-          </p>
-        </div>
-      </div>
-
-      <div class="chat__controls">
-        <input
-          v-model="message"
-          class="chat__input"
-          type="text"
-          placeholder="Написать сообщение"
+        <messages-list
+          :current-chat="currentChat"
+          :current-user-id="currentUserId"
         />
-        <img
-          class="chat__emoji-icon"
-          src="../../assets/icons/emoji.svg"
-          alt="emoji"
-          @mouseenter="isEmoji = true"
-          @mouseleave="closeEmoji"
-        />
-        <div
-          class="chat__emoji-container"
-          @mouseleave="closeEmoji"
-          @mousemove="removeTimerIndex"
-        >
-          <transition name="fade">
-            <emoji
-              v-show="isEmoji"
-              class="chat__emoji"
-              :is-hidden-emoji="isHiddenEmoji"
-              @addEmoji="addEmoji"
-            />
-          </transition>
-        </div>
-        <svg
-          class="chat__message-btn"
-          viewBox="0 0 100 150"
-          xmlns="http://www.w3.org/2000/svg"
-          @click="addMessage"
-        >
-          <line
-            x1="-43"
-            y1="12"
-            x2="110"
-            y2="73"
-            stroke="#2286ef"
-            stroke-width="15"
-            stroke-linecap="round"
-          />
-          <line
-            x1="-43"
-            y1="138"
-            x2="110"
-            y2="73"
-            stroke="#2286ef"
-            stroke-width="15"
-            stroke-linecap="round"
-          />
-          <line
-            x1="-13"
-            y1="73"
-            x2="110"
-            y2="73"
-            stroke="#2286ef"
-            stroke-width="15"
-            stroke-linecap="round"
-          />
-          <line
-            x1="-13"
-            y1="73"
-            x2="-43"
-            y2="12"
-            stroke="#2286ef"
-            stroke-width="15"
-            stroke-linecap="round"
-          />
-          <line
-            x1="-13"
-            y1="73"
-            x2="-43"
-            y2="138"
-            stroke="#2286ef"
-            stroke-width="15"
-            stroke-linecap="round"
-          />
-        </svg>
       </div>
+      <controls @addMessage="addMessage" />
     </div>
   </div>
 </template>
 
 <script>
 import { mapState, mapMutations, mapActions } from 'vuex'
-import Emoji from '@/components/chat/Emoji'
+import MenuList from '@/components/chat/chat-items/MenuList'
+import MessagesList from '@/components/chat/chat-items/MessagesList'
+import Controls from '@/components/chat/chat-items/Controls'
 
 export default {
   components: {
-    Emoji
+    MenuList,
+    MessagesList,
+    Controls
   },
   data() {
     return {
       targetChatName: '',
-      message: '',
       activeChatIndex: null,
-      isEmoji: false,
-      isHiddenEmoji: false,
-      emojiTimerIndex: null,
       menuListIndexes: []
     }
   },
   mounted() {
     this.fetch()
-    this.isHiddenEmoji = true
   },
   computed: {
     ...mapState('chat', ['chatItems', 'currentUserId', 'currentUserAvatar']),
@@ -218,7 +69,7 @@ export default {
       if (this.chatItems && this.chatItems[this.activeChatIndex]) {
         return this.chatItems[this.activeChatIndex].chatList
       } else {
-        return false
+        return []
       }
     }
   },
@@ -232,40 +83,17 @@ export default {
       }
       this.activeChatIndex = 0
     },
-    isHiddenImg(index) {
-      const currentChat = this.currentChat
-      if (index === currentChat.length - 1) {
-        return true
-      } else if (currentChat[index].userId === currentChat[index + 1].userId) {
-        return false
-      } else {
-        return true
-      }
-    },
-    addEmoji(emoji) {
-      this.message = this.message + emoji
-    },
-    closeEmoji() {
-      this.emojiTimerIndex = setTimeout(() => {
-        this.isEmoji = false
-      }, 400)
-    },
-    removeTimerIndex() {
-      clearTimeout(this.emojiTimerIndex)
-    },
-    addMessage() {
+    async addMessage() {
       if (!this.message) return
 
-      this.fetchMessage([
+      await this.fetchMessage([
         this.currentUserId,
         this.currentUserAvatar,
         this.activeChatIndex,
         this.message
       ])
       this.message = ''
-      setTimeout(() => {
-        this.scrollToMessage()
-      }, 0)
+      this.scrollToMessage()
     },
     scrollToMessage() {
       const currentMessage = this.$el.querySelector('#chat-container')
@@ -281,6 +109,9 @@ export default {
         messages[targetMessageIndex].scrollIntoView()
         this.resetUnreadMessageNumber(this.activeChatIndex)
       }
+    },
+    setActiveChatIndex(menuItemIndex) {
+      this.activeChatIndex = menuItemIndex
     }
   },
   watch: {
@@ -306,7 +137,7 @@ export default {
 }
 </script>
 
-<style lang="scss">
+<style lang="scss" scoped>
 .container {
   display: flex;
   height: 700px;
@@ -357,63 +188,6 @@ export default {
       background: $zircon;
     }
   }
-  &__list {
-    cursor: pointer;
-  }
-  &__hiding-wrapper {
-    padding-top: 20px;
-    border-bottom: 1px solid $pattens-blue;
-  }
-  &__item {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin-left: 30px;
-  }
-  &__img {
-    height: 50px;
-    width: 50px;
-    border-radius: 3px;
-  }
-  &__online-status {
-    position: absolute;
-    top: 39px;
-    left: 43px;
-    width: 10px;
-    height: 10px;
-    border: 2px solid $white;
-    border-radius: 50%;
-  }
-  &__user-full-name {
-    margin-left: 20px;
-    line-height: 20px;
-    font-weight: 600;
-    color: $deep-cove;
-    letter-spacing: 0.02em;
-  }
-  &__unread-message-number {
-    position: absolute;
-    top: 0px;
-    right: 25px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-width: 30px;
-    padding: 0 5px;
-    height: 20px;
-    font-size: 14px;
-    border-radius: 3px;
-    background-color: $coral-red;
-    color: $white;
-  }
-  &__last-message {
-    margin: 10px 0px 22px 30px;
-    width: 255px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: $cadet-blue;
-  }
 }
 
 .chat {
@@ -461,75 +235,5 @@ export default {
       background: $zircon;
     }
   }
-  &__item {
-    display: flex;
-    align-items: flex-end;
-  }
-  &__img {
-    height: 30px;
-    width: 30px;
-    border-radius: 3px;
-  }
-  &__message {
-    max-width: 390px;
-    margin-top: 22px;
-    padding: 20px 20px 32px 20px;
-    border-radius: 3px;
-    letter-spacing: 0.01em;
-  }
-  &__controls {
-    display: flex;
-    align-items: center;
-    position: relative;
-    height: 80px;
-    border-bottom: 1px solid $pattens-blue;
-    border-right: 1px solid $pattens-blue;
-  }
-  &__message-btn {
-    margin-left: 48px;
-    width: 36px;
-    height: 26px;
-    cursor: pointer;
-  }
-  &__emoji-icon {
-    margin-left: -55px;
-  }
-  &__input {
-    height: 50px;
-    width: 365px;
-    margin: 13px;
-    padding: 0 65px 0 25px;
-    border-radius: 3px;
-    border: 1px solid $blue-haze;
-    background-color: $zircon;
-    &::placeholder {
-      color: $cadet-blue;
-    }
-  }
-  &__emoji {
-    position: absolute;
-    top: -438px;
-    left: 206px;
-    cursor: pointer;
-  }
-}
-
-font-awesome-icon {
-  position: absolute;
-  display: block;
-  left: 417px;
-  top: 29px;
-  height: 25px;
-  width: 25px;
-  color: $cadet-blue;
-}
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.3s;
-}
-.fade-enter,
-.fade-leave-to {
-  opacity: 0;
 }
 </style>

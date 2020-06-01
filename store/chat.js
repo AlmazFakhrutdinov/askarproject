@@ -102,7 +102,13 @@ const data = [
         avatar: 'https://picsum.photos/id/237/50/50',
         userId: 1,
         autor: 'Борис',
-        message: 'Бля родичи не отпускают'
+        message: 'Родичи не отпускают'
+      },
+      {
+        avatar: 'https://picsum.photos/id/232/50/50',
+        userId: 3,
+        autor: 'Денис',
+        message: 'Лол'
       }
     ]
   },
